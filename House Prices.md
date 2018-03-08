@@ -12,6 +12,7 @@ House Prices: Advanced Regression Techniques.(V1)
 - pandas
 - seaborn
 - numpy
+- mapplot
 
 # 순서
 
