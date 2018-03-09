@@ -61,5 +61,5 @@ House Prices: Advanced Regression Techniques.(V1)
 - SalePrice랑 OverallCond, MSSubClass, YearBuilt는 관계없다.
 - GrLivArea, GarageArea, TotalBsmtSF는 높은 correlation이 있다(정보가 중복될 수 있음..)
 
-다음으로 해야될 것 높은 상관계수를 가지는 상위 10개 요인들, outliar, missing data, get_dummy
+다음으로 해야될  높은 상관계수를 가지는 상위 10개 요인들, outliar, missing data, get_dummy.....;;
 
