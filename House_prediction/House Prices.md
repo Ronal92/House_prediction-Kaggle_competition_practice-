@@ -3,7 +3,8 @@ House Prices: Advanced Regression Techniques.(V1)
 
 	*이 글에 도움을 주신 분들!!*
 	  > https://www.kaggle.com/pmarcelino/comprehensive-data-exploration-with-python
-
+	  > https://www.kaggle.com/serigne/stacked-regressions-top-4-on-leaderboard
+	  
 
 ------------------------------------------------------------
 
@@ -69,7 +70,7 @@ House Prices: Advanced Regression Techniques.(V1)
 	sns.set(font_scale=1.25)
 	hm = sns.heatmap(cm, cbar=True, annot=True, square=True, fmt='.2f', annot_kws={'size': 10}, yticklabels=cols.values, xticklabels=cols.values)
 
-	--> OverallQual, GrLivArea, GarageAreas, TotalBsmtSF, 1stFlrSF 변수가 주요 요인임!
+	--> OverallQual, GrLivArea, GarageArea, TotalBsmtSF, 1stFlrSF 변수가 주요 요인임!
 
 
 ## 3. Missing Data 처리
@@ -100,12 +101,36 @@ House Prices: Advanced Regression Techniques.(V1)
 최종적으로 prediction을 위해서는 예측값의 정확도에 영향을 줄 수 있는 outliar들을 train data에서 지워 주어야 한다.
 우선 표준정규분표를 사용해서 Out Liar로 지정할 기준을 설정한다.
 
-	<코드 - 'SalePrice'의 표준정규분포>
+	<코드 - 'SalePrice'의 표준정규분포 값>
 	saleprice_scaled = StandardScaler().fit_transform(df_train['SalePrice'][:,np.newaxis]);
 	low_range = saleprice_scaled[saleprice_scaled[:,0].argsort()][:10]
 	high_range= saleprice_scaled[saleprice_scaled[:,0].argsort()][-10:]
 
 SalePrice의 표준정규분표 결과, low_range에서는 문제 될게 없지만, high_range에서는 7 이상의 값들이 outliar로 볼 수 있다. OverallQual, GrLivArea, GarageAreas, TotalBsmtSF, 1stFlrSF를 독립변수로 SalePrice를 종속변수로 하는 scatter plot에서 7이상의 값들이 나올 경우 outliar로 볼 수 있다. 하지만 그래프 전체적으로 봤을 때, trend와 관련이 있는지를 조심해야 한다. 
 
+	<코드>
+	plt.scatter(df_train.GrLivArea, df_train.SalePrice, c = "blue", marker = "s")
+	plt.title("Looking for outliers")
+	plt.xlabel("GrLivArea")
+	plt.ylabel("SalePrice")
+	df_train = df_train[df_train.GrLivArea<4000]
+
+## 5. Log transform
+
+모델링을 할 때, target value의 분포가 정규 분포를 따르도록 하는 것이 좋다.
+현재 target value 즉, SalePrice의 분포도를 보면, right skwed 된 것을 확인할 수 있다.
+
+	<코드 - 'SalePrice'의 정규분표 표>
+	sns.distplot(df_train['SalePrice'], fit=norm);
+	fig = plt.figure()
+	res = stats.probplot(df_train['SalePrice'], plot=plt)
 
 
+	<코드 - log transformation>
+	df_train.SalePrice = np.log1p(df_train.SalePrice)
+
+## 6. feature engineering
+
+train_data와 test_data를 합친 후 missing value와 Transforming, Skewed features 마지막으로 Getting Dummy로 데이터 처리를 마무리한다.	
+
+## 7. Modeling
