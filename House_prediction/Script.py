@@ -1,3 +1,6 @@
+
+# In[145]:
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -6,119 +9,135 @@ from sklearn.preprocessing import StandardScaler
 
 df_train = pd.read_csv('../input/train.csv')
 df_test = pd.read_csv('../input/test.csv')
-df_train.columns
-
-df_train_ID = df_train['Id']
-df_test_ID = df_test['Id']
-
-df_train.drop('Id', axis=1)
-df_test.drop('Id', axis=1)
-
-data = pd.concat( [df_train['SalePrice'], df_train['YearBuilt']] , axis = 1)
-data.plot.scatter(x='YearBuilt', y='SalePrice')
-
-data = pd.concat([df_train['SalePrice'], df_train['OverallQual']], axis=1)
-fig = sns.boxplot(x='OverallQual', y="SalePrice", data=data)
-
-cols = ['SalePrice', 'OverallQual', 'MSSubClass', 'OverallCond', 'LotArea', 'YearBuilt', 'GrLivArea', 'GarageArea', 'TotalBsmtSF']
-corrmat = df_train[cols].corr()
-sns.heatmap(corrmat, vmax=.8, square=True)
-
-k = 10 #number of variables for heatmap
-cols = corrmat.nlargest(k, 'SalePrice')['SalePrice'].index
-cm = np.corrcoef(df_train[cols].values.T)
-sns.set(font_scale=1.25)
-hm = sns.heatmap(cm, cbar=True, annot=True, square=True, fmt='.2f', annot_kws={'size': 10}, yticklabels=cols.values, xticklabels=cols.values)
-
-total = df_train.isnull().sum().sort_values(ascending=False)
-percent = (df_train.isnull().sum()/df_train.isnull().count()).sort_values(ascending=False)
-missing_data = pd.concat([total, percent], axis=1, keys=['Total', 'Percent'])
-
-df_train = df_train.drop((missing_data[missing_data['Total'] > 1]).index,1)
-df_train = df_train.drop(df_train.loc[df_train['Electrical'].isnull()].index)
-df_train.isnull().sum().max()
-
-saleprice_scaled = StandardScaler().fit_transform(df_train['SalePrice'][:,np.newaxis]);
-low_range = saleprice_scaled[saleprice_scaled[:,0].argsort()][:10]
-high_range= saleprice_scaled[saleprice_scaled[:,0].argsort()][-10:]
-
-df_train.SalePrice = np.log1p(df_train.SalePrice)
 
 
-### 아래 코드는 연습용
+# In[146]:
 
-df_train_ID = df_train['Id']
-df_test_ID = df_test['Id']
-
-df_train.drop('Id', axis=1)
-df_test.drop('Id', axis=1)
-
-df_train['MSSubClass'] = df_train['MSSubClass'].apply(str)
-
-total = df_test.isnull().sum().sort_values(ascending=False)
-percent = (df_test.isnull().sum()/df_test.isnull().count()).sort_values(ascending=False)
-missing_data = pd.concat([total, percent], axis=1, keys=['Total', 'Percent'])
-
-ntrain = df_train.shape[0]
-ntest = df_train.shape[0]
-train_y = df_train.SalePrice.values
-all_data = pd.concat((df_train, df_test)).reset_index(drop=True)
-all_data.drop(['SalePrice'], axis=1, inplace=True)
-
-all_data_na = all_data.isnull().sum()
-all_data_na = all_data_na.drop(all_data_na[all_data_na==0].index).sort_values(ascending=False)
-missing_data = pd.DataFrame({'Missing Ratio':all_data_na})
-
-for col in ('BsmtFullBath', 'BsmtHalfBath', 'BsmtUnfSF', 'BsmtFinSF2', 'BsmtFinSF1'):
-    all_data[col] = all_data[col].fillna(0)
-all_data = all_data.drop(['Utilities'], axis=1)
-all_data['Functional'] = all_data['Functional'].fillna("Typ")
-
-for col in ('TotalBsmtSF', 'SaleType', 'KitchenQual', 'GarageCars', 'GarageArea', 'Exterior2nd', 'Exterior1st'):
-    all_data = all_data.drop(col)
-
-    all_data['MSSubClass'] = all_data['MSSubClass'].apply(str)
+train_na = df_train.isnull().sum()
+test_na = df_test.isnull().sum()
+total_train_na = train_na.sort_values(ascending=False)
+total_test_na = test_na.sort_values(ascending=False)
+missing_data_train = pd.concat([total_train_na],axis=1,keys=['total_train_na'])
+missing_data_test = pd.concat([total_test_na], axis=1, keys=['total_test_na'])
 
 
-#Changing OverallCond into a categorical variable
-all_data['OverallCond'] = all_data['OverallCond'].astype(str)
+# In[147]:
+
+## df_train에서 missing value에 대한 분석으로 나온 column들 위주로 각각 train과 test에서 지운다.
+c = [col for col in df_test.columns if col in train_na[train_na>1]]
+df_train = df_train.drop(c, 1)
 
 
-#Year and month sold are transformed into categorical features.
-all_data['YrSold'] = all_data['YrSold'].astype(str)
-all_data['MoSold'] = all_data['MoSold'].astype(str)
+# In[148]:
 
-from sklearn.preprocessing import LabelEncoder
-
-from sklearn.preprocessing import LabelEncoder
-cols = ( 
-        'ExterQual', 'ExterCond','HeatingQC',  'KitchenQual', 'Functional', 'LandSlope',
-        'LotShape', 'PavedDrive', 'Street', 'CentralAir', 'MSSubClass', 'OverallCond', 
-        'YrSold', 'MoSold')
-# process columns, apply LabelEncoder to categorical features
-
-for c in cols:
-    lbl = LabelEncoder() 
-    lbl.fit(list(all_data[c].values)) 
-    all_data[c] = lbl.transform(list(all_data[c].values))
-
-all_data = pd.get_dummies(all_data)
+df_test = df_test.drop(c,1)
 
 
-train = all_data[:ntrain]
-test = all_data[ntrain:]
+# In[149]:
 
-from sklearn.linear_model import ElasticNet, Lasso,  BayesianRidge, LassoLarsIC
-from sklearn.ensemble import RandomForestRegressor,  GradientBoostingRegressor
-from sklearn.kernel_ridge import KernelRidge
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import RobustScaler
-from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin, clone
-from sklearn.model_selection import KFold, cross_val_score, train_test_split
-from sklearn.metrics import mean_squared_error
+df_test['MSZoning'] = df_test['MSZoning'].fillna(df_test['MSZoning'].mode()[0])
+for col in ('BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF','TotalBsmtSF', 'BsmtFullBath', 'BsmtHalfBath'):
+    df_test[col] = df_test[col].fillna(0)
+
+
+# In[150]:
+
+df_test["Functional"] = df_test["Functional"].fillna("Typ")
+
+
+# In[151]:
+
+for col in ('GarageArea', 'GarageCars'):
+    df_test[col] = df_test[col].fillna(0)
+df_test['SaleType'] = df_test['SaleType'].fillna(df_test['SaleType'].mode()[0])
+df_test['KitchenQual'] = df_test['KitchenQual'].fillna(df_test['KitchenQual'].mode()[0])
+df_test['Exterior1st'] = df_test['Exterior1st'].fillna(df_test['Exterior1st'].mode()[0])
+df_test['Exterior2nd'] = df_test['Exterior2nd'].fillna(df_test['Exterior2nd'].mode()[0])
+
+
+# In[152]:
+
+df_train['Electrical'] = df_train['Electrical'].fillna(df_train['Electrical'].mode()[0])
+
+
+# In[153]:
+
+df_test = df_test.drop('Utilities',1)
+df_train = df_train.drop('Utilities',1)
+#### -----------  여기까지 지우는 거 끝
+
+
+# In[154]:
+
+categorical_features = df_train.select_dtypes(include = ["object"]).columns
+numerical_features = df_train.select_dtypes(exclude = ["object"]).columns
+numerical_features = numerical_features.drop("SalePrice")
+print("Numerical features : " + str(len(numerical_features)))
+print("Categorical features : " + str(len(categorical_features)))
+train_num = df_train[numerical_features]
+train_cat = df_train[categorical_features]
+
+
+# In[155]:
+
+## log 변화 : 정규분포(numerical)
+## train_cat은 할게 없음..
+from scipy.stats import skew 
+skewness = train_num.apply(lambda x: skew(x))
+skewness.sort_values(ascending=False)
+
+skewness = skewness[abs(skewness)>0.5]
+skewness.index
+skew_features = df_train[skewness.index]
+skew_features = np.log1p(skew_features)
+
+
+# In[156]:
+
+train_cat = pd.get_dummies(train_cat)
+
+
+# In[181]:
+
+train = pd.concat([train_cat,train_num],axis=1)
+train.shape
+train_ID = train['Id']
+train.drop('Id',axis=1)
+
+
+# In[167]:
+
+df_train.SalePrice = np.log1p(df_train.SalePrice )
+y = df_train.SalePrice
+
+
+# In[170]:
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression, RidgeCV, LassoCV, ElasticNetCV
+from sklearn.metrics import mean_squared_error, make_scorer
 import xgboost as xgb
-import lightgbm as lgb
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+# In[171]:
+
+train = pd.concat([train_cat,train_num],axis=1)
+X_train,X_test,y_train,y_test = train_test_split(train,y,test_size = 0.3,random_state= 0)
+
+
+# In[172]:
+
+def rmsle(y, y_pred):
+    return np.sqrt(mean_squared_error(y, y_pred))
+
+
+# In[173]:
 
 model_xgb = xgb.XGBRegressor(colsample_bytree=0.4603, gamma=0.0468, 
                              learning_rate=0.05, max_depth=3, 
@@ -127,12 +146,23 @@ model_xgb = xgb.XGBRegressor(colsample_bytree=0.4603, gamma=0.0468,
                              subsample=0.5213, silent=1,
                              random_state =7, nthread = -1)
 
-model_xgb.fit(train, train_y)
-xgb_train_pred = model_xgb.predict(train)
-xgb_pred = np.expm1(model_xgb.predict(test))
+model_xgb.fit(X_train, y_train)
+
+
+
+# In[174]:
+
+xgb_train_pred = model_xgb.predict(X_train)
+xgb_pred = np.expm1(model_xgb.predict(X_test))
+print(rmsle(y_train, xgb_train_pred))
+
+
+
+# In[212]:
 
 sub = pd.DataFrame()
-sub['Id'] = df_test_ID
 sub['SalePrice'] = xgb_pred
+sub['Id'] = sub.index
+sub = sub[['Id','SalePrice']]
 sub.to_csv('submission.csv',index=False)
 
